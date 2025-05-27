@@ -7,13 +7,13 @@ date = datetime.now().strftime('%y%m%d')
 date_time = datetime.now().strftime('%y%m%d_%H%M%S')
 
 ## User Input ##############################################################################
-pset_name       = 'VCTree_PbPb2023_UPCDiKa_UPCReco_cfg.py'
+pset_name       = 'VCTree_PbPb2023_UPCDiKa_UPCReco_REHLT_cfg.py'
 
 output_dir      = '/store/group/phys_heavyions/jiazhao/Data_Run3/VCTree/crabMulti_%s/' %  date_time
 
 ## General #################################################################################
 config.section_('General')
-config.General.workArea = 'crab_projects/'+date
+config.General.workArea = 'crab_projects/'+date_time
 config.General.transferOutputs = True
 config.General.transferLogs = False
 

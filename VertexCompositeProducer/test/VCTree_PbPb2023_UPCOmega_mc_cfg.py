@@ -15,12 +15,10 @@ process.options.numberOfThreads=cms.untracked.uint32(1)
 
 # Define the input source
 process.source = cms.Source("PoolSource",
-    # fileNames = cms.untracked.vstring("file:/eos/cms/store/group/phys_heavyions/jiazhao/STARlight/2023Run3/Reco/STARlight_CohPhiToKK_Reco_nuclearParR7p67_240909_233818/STARlight/CohPhiToKK/240909_213828/0000/step3_STARlight_Reco_10.root"),
-    # fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/user/anstahll/CERN/PbPb2023/MC/2024_07_09/STARLIGHT/STARLIGHT_5p36TeV_2023Run3/coh_phi_dika_STARLIGHT_5p36TeV_2023Run3_UPCRECO_2024_07_09/240708_095519/0000/STARLIGHT_coh_phi_dika_RECO_10.root"),
-    # fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/mc/HINPbPbSpring23Reco/coherentPhitoKK_NoTuneCP5UPC_5p36TeV_starlight-pythia8/AODSIM/NoPU_UPC_132X_mcRun3_2023_realistic_HI_v9-v2/120000/02ac6a87-6ddc-470e-8918-f233f8b5974b.root"),
-    fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/user/anstahll/CERN/PbPb2023/MC/2024_07_20/STARLIGHT/STARLIGHT_5p36TeV_2023Run3/coh_phi_dika_extnuclearpar_STARLIGHT_5p36TeV_2023Run3_UPCRECO_2024_07_20/240912_161824/0000/STARLIGHT_coh_phi_dika_extnuclearpar_RECO_10.root"),
+    # fileNames = cms.untracked.vstring("file:/eos/cms/store/group/phys_heavyions/jiazhao/STARlight/2023Run3/Reco/STARlight_CohPhiToKK_Reco_132X_240125_044529/STARlight/CohPhiToKK/240125_034539/0000/step3_STARlight_Reco_10.root"),
+    fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/user/anstahll/CERN/PbPb2023/MC/2024_07_09/STARLIGHT/STARLIGHT_5p36TeV_2023Run3/coh_omega_dipi_STARLIGHT_5p36TeV_2023Run3_UPCRECO_2024_07_09/240711_015326/0000/STARLIGHT_coh_omega_dipi_RECO_10.root"),
 )
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(2000))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 # Set the global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -140,7 +138,6 @@ trig_info = cms.untracked.VPSet([
     # UPC ZB triggers
     # cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v*')),
     cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*'), filter = cms.string('hltSinglePixelTrackLowPtForUPC'), minN = cms.int32(1)),
-    # cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*')),
     # cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v*')),
     # UPC ZDC triggers
     # cms.PSet(path = cms.string('HLT_HIUPC_ZDC1nOR_SinglePixelTrack_MaxPixelTrack_v*')),
@@ -160,7 +157,7 @@ process.diKaAna = particleAna_mc.clone(
 )
 
 # Define the output
-process.TFileService = cms.Service("TFileService", fileName = cms.string('diKa_ana_mc.root'))
+process.TFileService = cms.Service("TFileService", fileName = cms.string('omega_ana_mc.root'))
 # process.p = cms.EndPath(process.diKaAna * process.generalTracksAna * process.hiConformalPixelTracksAna)
 process.p = cms.EndPath(process.diKaAna)
 

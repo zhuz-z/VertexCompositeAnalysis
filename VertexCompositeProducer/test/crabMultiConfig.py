@@ -13,7 +13,7 @@ output_dir      = '/store/group/phys_heavyions/jiazhao/Data_Run3/VCTree/crabMult
 
 ## General #################################################################################
 config.section_('General')
-config.General.workArea = 'crab_projects/'+date
+config.General.workArea = 'crab_projects/'+date_time
 config.General.transferOutputs = True
 config.General.transferLogs = False
 

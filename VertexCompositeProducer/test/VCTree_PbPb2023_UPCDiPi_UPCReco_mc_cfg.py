@@ -15,12 +15,9 @@ process.options.numberOfThreads=cms.untracked.uint32(1)
 
 # Define the input source
 process.source = cms.Source("PoolSource",
-    # fileNames = cms.untracked.vstring("file:/eos/cms/store/group/phys_heavyions/jiazhao/STARlight/2023Run3/Reco/STARlight_CohPhiToKK_Reco_nuclearParR7p67_240909_233818/STARlight/CohPhiToKK/240909_213828/0000/step3_STARlight_Reco_10.root"),
-    # fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/user/anstahll/CERN/PbPb2023/MC/2024_07_09/STARLIGHT/STARLIGHT_5p36TeV_2023Run3/coh_phi_dika_STARLIGHT_5p36TeV_2023Run3_UPCRECO_2024_07_09/240708_095519/0000/STARLIGHT_coh_phi_dika_RECO_10.root"),
-    # fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/mc/HINPbPbSpring23Reco/coherentPhitoKK_NoTuneCP5UPC_5p36TeV_starlight-pythia8/AODSIM/NoPU_UPC_132X_mcRun3_2023_realistic_HI_v9-v2/120000/02ac6a87-6ddc-470e-8918-f233f8b5974b.root"),
-    fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/user/anstahll/CERN/PbPb2023/MC/2024_07_20/STARLIGHT/STARLIGHT_5p36TeV_2023Run3/coh_phi_dika_extnuclearpar_STARLIGHT_5p36TeV_2023Run3_UPCRECO_2024_07_20/240912_161824/0000/STARLIGHT_coh_phi_dika_extnuclearpar_RECO_10.root"),
+    fileNames = cms.untracked.vstring("root://xrootd-cms.infn.it//store/user/anstahll/CERN/PbPb2023/MC/2024_04_18/STARLIGHT/STARLIGHT_5p36TeV_2023Run3/coh_rho_dipi_STARLIGHT_5p36TeV_2023Run3_UPCRECO_2024_04_18/240421_024558/0000/STARLIGHT_coh_rho_dipi_RECO_1.root"),
 )
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(2000))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 # Set the global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -39,7 +36,7 @@ process.es_pool = cms.ESSource("PoolDBESSource",
 )
 process.es_prefer = cms.ESPrefer('HcalTextCalibrations', 'es_ascii')
 process.es_ascii = cms.ESSource('HcalTextCalibrations',
-    input = cms.VPSet(cms.PSet(object = cms.string('ElectronicsMap'), file = cms.FileInPath("VertexCompositeAnalysis/VertexCompositeProducer/data/emap_2023_newZDC_v3.txt")))
+    input = cms.VPSet(cms.PSet(object = cms.string('ElectronicsMap'), file = cms.FileInPath("emap_2023_newZDC_v3.txt")))
 )
 
 #* cent_seq: Add PbPb centrality
@@ -135,13 +132,12 @@ event_filter = cms.untracked.vstring(
 
 trig_info = cms.untracked.VPSet([
     # Zero Bias triggers
-    # cms.PSet(path = cms.string('HLT_HIZeroBias_v*')),
-    # cms.PSet(path = cms.string('HLT_HIZeroBias_HighRate_v*')),
+    cms.PSet(path = cms.string('HLT_HIZeroBias_v*')),
+    cms.PSet(path = cms.string('HLT_HIZeroBias_HighRate_v*')),
     # UPC ZB triggers
-    # cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v*')),
-    cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*'), filter = cms.string('hltSinglePixelTrackLowPtForUPC'), minN = cms.int32(1)),
-    # cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*')),
-    # cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v*')),
+    cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v*')),
+    cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*')),
+    cms.PSet(path = cms.string('HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v*')),
     # UPC ZDC triggers
     # cms.PSet(path = cms.string('HLT_HIUPC_ZDC1nOR_SinglePixelTrack_MaxPixelTrack_v*')),
     # cms.PSet(path = cms.string('HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_v*')),
@@ -152,15 +148,14 @@ from VertexCompositeAnalysis.VertexCompositeAnalyzer.particle_tree_cff import pa
 process.diKaAna = particleAna_mc.clone(
   recoParticles = cms.InputTag("diKa"),
   primaryVertices = cms.InputTag("primaryVertexRecoveryForUPC"),
-  genPdgId     = cms.untracked.vuint32([333]),
+  genPdgId     = cms.untracked.vuint32([113]),
   selectEvents = cms.string(""),
   eventFilterNames = event_filter,
-  addTrgObj = cms.untracked.bool(True),
   triggerInfo = trig_info,
 )
 
 # Define the output
-process.TFileService = cms.Service("TFileService", fileName = cms.string('diKa_ana_mc.root'))
+process.TFileService = cms.Service("TFileService", fileName = cms.string('diPi_ana_mc.root'))
 # process.p = cms.EndPath(process.diKaAna * process.generalTracksAna * process.hiConformalPixelTracksAna)
 process.p = cms.EndPath(process.diKaAna)
 
