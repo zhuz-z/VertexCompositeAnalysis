@@ -26,7 +26,20 @@ process.GlobalTag.globaltag = cms.string('141X_dataRun3_v6')
 
 ## ##############################################################################################################################
 ## Variables Production #########################################################################################################
+# ZDC modules
+process.load('HeavyIonsAnalysis.ZDCAnalysis.QWZDC2018Producer_cfi')
+process.load('HeavyIonsAnalysis.ZDCAnalysis.QWZDC2018RecHit_cfi')
+process.load('HeavyIonsAnalysis.ZDCAnalysis.zdcanalyzer_cfi')
 
+process.zdcdigi.SOI = cms.untracked.int32(2)
+
+process.zdcanalyzer.doZDCRecHit = False
+process.zdcanalyzer.doZDCDigi = True
+process.zdcanalyzer.zdcRecHitSrc = cms.InputTag("QWzdcreco")
+process.zdcanalyzer.zdcDigiSrc = cms.InputTag("hcalDigis", "ZDC")
+process.zdcanalyzer.calZDCDigi = False
+process.zdcanalyzer.verbose = False
+process.zdcanalyzer.nZdcTs = cms.int32(6)
 #* Set ZDC information
 process.load("VertexCompositeAnalysis.VertexCompositeProducer.ZDCRun3_cfg")
 process.load("RecoHI.HiCentralityAlgos.CentralityBin_cfi")
@@ -74,7 +87,10 @@ process.hiEmptyBXAna = particleAna.clone(
 
 # Define the output
 process.TFileService = cms.Service("TFileService", fileName = cms.string('hiEmptyBX.root'))
-process.p = cms.EndPath(process.hiEmptyBXAna)
+process.p = cms.EndPath(
+    process.hiEmptyBXAna *
+    process.zdcanalyzer
+)
 
 #! Define the process schedule !!!!!!!!!!!!!!!!!!
 process.schedule = cms.Schedule(
