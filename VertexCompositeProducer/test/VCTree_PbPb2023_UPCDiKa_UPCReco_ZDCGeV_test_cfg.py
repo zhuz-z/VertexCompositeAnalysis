@@ -43,7 +43,7 @@ process.zdcanalyzer.nZdcTs = cms.int32(6)
 #* Set ZDC information
 process.load("VertexCompositeAnalysis.VertexCompositeProducer.ZDCRun3_cfg")
 process.load("RecoHI.HiCentralityAlgos.CentralityBin_cfi")
-process.cent_seq = cms.Sequence(process.centralityBin * process.zdcreco)
+process.cent_seq = cms.Sequence(process.centralityBin * process.zdcdigi * process.zdcreco)
 
 #* Add the Particle producer
 from VertexCompositeAnalysis.VertexCompositeProducer.generalParticles_cff import generalParticles
@@ -122,6 +122,7 @@ process.eventFilter_HM_step = cms.Path( process.eventFilter_HM )
 # Define the analysis steps
 process.diKa_rereco_step = cms.Path(process.eventFilter_HM * process.hfPosFilterNTh20_seq * process.hfNegFilterNTh20_seq * process.diKa * process.oneDiKa * process.cent_seq)
 
+process.zdcAna_step = cms.Path(process.eventFilter_HM * process.hfPosFilterNTh20_seq * process.hfNegFilterNTh20_seq * process.zdcanalyzer)
 ## Adding the VertexComposite tree ################################################################################################
 
 event_filter = cms.untracked.vstring(
@@ -159,20 +160,24 @@ process.diKaAna = particleAna.clone(
   selectEvents = cms.string("diKa_rereco_step"),
   eventFilterNames = event_filter,
   addTrgObj = cms.untracked.bool(True),
-  triggerInfo = trig_info,
+  triggerInfo = trig_info, 
+  zdcDigiSrc = cms.InputTag("hcalDigis","ZDC"),
+  nZdcTs = cms.int32(6),
+  calZDCDigi = cms.bool(False),
+  verbose = cms.bool(False),
 )
 
 # Define the output
 process.TFileService = cms.Service("TFileService", fileName = cms.string('diKa_ana.root'))
 process.p = cms.EndPath(
-    process.diKaAna *
-    process.zdcanalyzer
+    process.diKaAna
 ) 
 
 #! Define the process schedule !!!!!!!!!!!!!!!!!!
 process.schedule = cms.Schedule(
     process.eventFilter_HM_step,
     process.diKa_rereco_step,
+    process.zdcAna_step,
     process.p
 )
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
