@@ -26,20 +26,7 @@ process.GlobalTag.globaltag = cms.string('141X_dataRun3_v6')
 
 ## ##############################################################################################################################
 ## Variables Production #########################################################################################################
-# ZDC modules
-process.load('HeavyIonsAnalysis.ZDCAnalysis.QWZDC2018Producer_cfi')
-process.load('HeavyIonsAnalysis.ZDCAnalysis.QWZDC2018RecHit_cfi')
-process.load('HeavyIonsAnalysis.ZDCAnalysis.zdcanalyzer_cfi')
 
-process.zdcdigi.SOI = cms.untracked.int32(2)
-
-process.zdcanalyzer.doZDCRecHit = False
-process.zdcanalyzer.doZDCDigi = True
-process.zdcanalyzer.zdcRecHitSrc = cms.InputTag("QWzdcreco")
-process.zdcanalyzer.zdcDigiSrc = cms.InputTag("hcalDigis", "ZDC")
-process.zdcanalyzer.calZDCDigi = False
-process.zdcanalyzer.verbose = False
-process.zdcanalyzer.nZdcTs = cms.int32(6)
 #* Set ZDC information
 process.load("VertexCompositeAnalysis.VertexCompositeProducer.ZDCRun3_cfg")
 process.load("RecoHI.HiCentralityAlgos.CentralityBin_cfi")
@@ -94,15 +81,15 @@ process.hltFilter.andOr = cms.bool(True)
 process.hltFilter.throw = cms.bool(False)
 process.hltFilter.HLTPaths = [
     # UPC ZB triggers
-    'HLT_HIUPC_ZeroBias_MaxPixelCluster10000_v*',
-    'HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v*',
-    'HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*',
     'HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v*',
+    'HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v*',
+    'HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v*',
+    'HLT_HIUPC_ZeroBias_MaxPixelCluster10000_v*',
     # UPC ZDC OR triggers
-    'HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000_v*',
-    'HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v*',
-    'HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_v*',
     'HLT_HIUPC_ZDC1nOR_SinglePixelTrack_MaxPixelTrack_v*',
+    'HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_v*',
+    'HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v*',
+    'HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000_v*',
     # UPC ZDC AND triggers
     'HLT_HIUPC_ZDC1nAND_NotMBHF2_MaxPixelCluster10000_v*',
 ]
@@ -160,13 +147,16 @@ process.diKaAna = particleAna.clone(
   eventFilterNames = event_filter,
   addTrgObj = cms.untracked.bool(True),
   triggerInfo = trig_info,
+  zdcRecHits = cms.InputTag("zdcreco"),
+  zdcDigiSrc = cms.InputTag("hcalDigis","ZDC"),
+  nZdcTs = cms.int32(6),
+  calZDCDigi = cms.bool(False),
 )
 
 # Define the output
 process.TFileService = cms.Service("TFileService", fileName = cms.string('diKa_ana.root'))
 process.p = cms.EndPath(
-    process.diKaAna *
-    process.zdcanalyzer
+    process.diKaAna
 ) 
 
 #! Define the process schedule !!!!!!!!!!!!!!!!!!
