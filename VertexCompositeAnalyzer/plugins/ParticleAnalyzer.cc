@@ -56,9 +56,43 @@
 #include "TrackingTools/PatternTools/interface/trackingParametersAtClosestApproachToBeamSpot.h"
 #include "HepPDT/ParticleID.hh"
 
+// ===== ZDC =====
+#include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
+#include "DataFormats/HcalDigi/interface/HcalQIESample.h"
+
+#include "CalibFormats/HcalObjects/interface/HcalDbService.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
+#include "CalibFormats/HcalObjects/interface/HcalCoderDb.h"
+
+#include "VertexCompositeAnalysis/VertexCompositeProducer/interface/QWZDC2018Helper.h"
+
 #include "VertexCompositeAnalysis/VertexCompositeProducer/interface/ParticleFitter.h"
 #include "ParticleContainer.h"
 
+#define MAXHITS 100000
+#define MAXMOD 56
+
+struct MyZDCRecHit {
+  int n;
+  float e[MAXMOD];
+  int zside[MAXMOD];
+  int section[MAXMOD];
+  int channel[MAXMOD];
+  int saturation[MAXMOD];
+  float sumPlus;
+  float sumMinus;
+};
+
+struct MyZDCDigi {
+  int n;
+  float chargefC[6][MAXMOD];
+  int adc[6][MAXMOD];
+  int zside[MAXMOD];
+  int section[MAXMOD];
+  int channel[MAXMOD];
+  float sumPlus;
+  float sumMinus;
+};
 //
 // constants, enums and typedefs
 //
@@ -79,7 +113,7 @@ private:
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
   virtual void getEventData(const edm::Event&, const edm::EventSetup&);
   virtual void getTriggerData(const edm::Event&, const edm::EventSetup&);
-  virtual void fillEventInfo(const edm::Event&);
+  virtual void fillEventInfo(const edm::Event&, const edm::EventSetup&);
   virtual void fillTriggerInfo(const edm::Event&);
   virtual void fillLumiInfo(const edm::Event&);
   virtual void fillRecoParticleInfo(const edm::Event&);
@@ -159,7 +193,15 @@ private:
 
   // ----------member data ---------------------------
 
+  MyZDCRecHit zdcRecHit;
+  MyZDCDigi zdcDigi;
+
+  int nZdcTs_;
+  bool calZDCDigi_;
+  bool verbose_;
   // input tokens
+  edm::EDGetTokenT<QIE10DigiCollection> zdcDigiToken_;
+  edm::ESGetToken<HcalDbService, HcalDbRecord> hcalDatabaseToken_;
   const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bField_esToken_;
   const edm::ESGetToken<L1TGlobalPrescalesVetosFract, L1TGlobalPrescalesVetosFractRcd> l1Pres_esToken_;
   const edm::EDGetTokenT<reco::BeamSpot> tok_offlineBS_;
@@ -234,6 +276,7 @@ private:
 //
 
 ParticleAnalyzer::ParticleAnalyzer(const edm::ParameterSet& iConfig) :
+  hcalDatabaseToken_(esConsumes<HcalDbService, HcalDbRecord>()),
   bField_esToken_(esConsumes<MagneticField, IdealMagneticFieldRecord>()),
   l1Pres_esToken_(esConsumes<edm::Transition::BeginRun>()),
   tok_offlineBS_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("beamSpot"))),
@@ -273,6 +316,15 @@ ParticleAnalyzer::ParticleAnalyzer(const edm::ParameterSet& iConfig) :
     tok_triggerLumiInfo_.emplace_back(consumes<LumiInfo>(data.existsAs<edm::InputTag>("lumiInfo") ? data.getParameter<edm::InputTag>("lumiInfo") : edm::InputTag()));
   }
   addInfo_["trgObj"] = iConfig.getUntrackedParameter<bool>("addTrgObj", false);
+  // ===== ZDC config =====
+  nZdcTs_ = iConfig.getParameter<int>("nZdcTs");
+  calZDCDigi_ = iConfig.getParameter<bool>("calZDCDigi");
+  verbose_ = iConfig.getParameter<bool>("verbose");
+
+  // ===== ZDC token =====
+  zdcDigiToken_ = consumes<QIE10DigiCollection>(
+      iConfig.getParameter<edm::InputTag>("zdcDigiSrc")
+);
 }
 
 
@@ -315,7 +367,7 @@ ParticleAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   getTriggerData(iEvent, iSetup);
 
   // fill information
-  fillEventInfo(iEvent);
+  fillEventInfo(iEvent, iSetup);
   fillTriggerInfo(iEvent);
   fillLumiInfo(iEvent);
   fillRecoParticleInfo(iEvent);
@@ -641,7 +693,7 @@ ParticleAnalyzer::getTriggerData(const edm::Event& iEvent, const edm::EventSetup
 
 
 void
-ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
+ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   // fill general information
   eventInfo_.add("RunNb", iEvent.id().run());
@@ -683,8 +735,8 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
     eventInfo_.add("HFsumETMinus", cent->EtHFtowerSumMinus());
     eventInfo_.add("Npixel", cent->multiplicityPixel());
     eventInfo_.add("NpixelTracks", cent->NpixelTracks());
-    eventInfo_.add("ZDCPlus", cent->zdcSumPlus());
-    eventInfo_.add("ZDCMinus", cent->zdcSumMinus());
+    eventInfo_.add("ZDCPlus_wrong", cent->zdcSumPlus());
+    eventInfo_.add("ZDCMinus_wrong", cent->zdcSumMinus());
     eventInfo_.add("Ntrkoffline", getUShort(cent->Ntracks(), "Ntrkoffline"));
   }
   const auto& centBin = iEvent.getHandle(tok_centBin_);
@@ -726,12 +778,67 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
   const auto& zdcRecHits = iEvent.getHandle(tok_zdcRecHitSrc_);
   if (zdcRecHits.isValid())
   {
-    float ZDCMinus(0), ZDCPlus(0);
+    float ZDCMinus_wrong(0), ZDCPlus_wrong(0);
     for (const auto& rh : *zdcRecHits) {
       HcalZDCDetId zdcid(rh.id());
       if ((zdcid.section() == 1 && zdcid.channel() <= 5) || zdcid.section() == 2)
-        (zdcid.zside() < 0 ? ZDCMinus : ZDCPlus) += rh.energy();
+        (zdcid.zside() < 0 ? ZDCMinus_wrong : ZDCPlus_wrong) += rh.energy();
     }
+    eventInfo_.add("ZDCMinus_wrong", ZDCMinus_wrong);
+    eventInfo_.add("ZDCPlus_wrong",  ZDCPlus_wrong);
+  }
+
+  const auto& zdcdigis = iEvent.getHandle(zdcDigiToken_);
+
+  if (zdcdigis.isValid())
+  {
+    const auto& conditions = iSetup.getHandle(hcalDatabaseToken_);
+
+    int nhits = 0;
+
+    memset(zdcDigi.chargefC, 0, sizeof(zdcDigi.chargefC));
+
+    for (auto it = zdcdigis->begin(); it != zdcdigis->end(); ++it)
+    {
+      const QIE10DataFrame digi = static_cast<const QIE10DataFrame>(*it);
+      HcalZDCDetId zdcid = digi.id();
+
+      CaloSamples caldigi;
+
+      if (calZDCDigi_)
+      {
+        const HcalQIECoder* qiecoder = conditions->getHcalCoder(zdcid);
+        const HcalQIEShape* qieshape = conditions->getHcalShape(qiecoder);
+        HcalCoderDb coder(*qiecoder, *qieshape);
+        coder.adc2fC(digi, caldigi);
+      }
+
+      for (int ts = 0; ts < digi.samples(); ts++)
+      {
+        zdcDigi.chargefC[ts][nhits] =
+          calZDCDigi_ ? caldigi[ts]
+                      : QWAna::ZDC2018::QIE10_regular_fC[digi[ts].adc()][digi[ts].capid()];
+      }
+
+      nhits++;
+    }
+    float sumcEMP = 0, sumcEMN = 0, sumcHDP = 0, sumcHDN = 0;
+
+    for (int idet = 0; idet < 5; idet++) {
+      auto idet_m = idet, idet_p = idet + 12;
+      sumcEMN += (zdcDigi.chargefC[2][idet_m] - zdcDigi.chargefC[1][idet_m]);
+      sumcEMP += (zdcDigi.chargefC[2][idet_p] - zdcDigi.chargefC[1][idet_p]);
+    }
+
+    for (int idet = 8; idet < 12; idet++) {
+      auto idet_m = idet, idet_p = idet + 12;
+      sumcHDN += (zdcDigi.chargefC[2][idet_m] - zdcDigi.chargefC[1][idet_m]);
+      sumcHDP += (zdcDigi.chargefC[2][idet_p] - zdcDigi.chargefC[1][idet_p]);
+    }
+
+    float ZDCMinus = (sumcEMN * 0.1 + sumcHDN) * 0.5031;
+    float ZDCPlus  = (sumcEMP * 0.1 + sumcHDP) * 0.9397;
+
     eventInfo_.add("ZDCMinus", ZDCMinus);
     eventInfo_.add("ZDCPlus",  ZDCPlus);
   }
