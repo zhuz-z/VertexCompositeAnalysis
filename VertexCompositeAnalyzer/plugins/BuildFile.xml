@@ -16,4 +16,9 @@
 <use name="SimDataFormats/Associations"/>
 <use name="HLTrigger/HLTcore"/>
 <use name="heppdt"/>
+<use name="CondFormats/HcalObjects"/>
+<use name="CondFormats/DataRecord"/>
+<use name="CalibFormats/CaloObjects"/>
+<use name="CalibCalorimetry/HcalAlgos"/>
+<use name="CalibCalorimetry/HcalPlugins"/>
 <flags EDM_PLUGIN="1"/>
