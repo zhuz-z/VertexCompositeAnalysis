@@ -151,6 +151,7 @@ process.diKaAna = particleAna.clone(
   zdcDigiSrc = cms.InputTag("hcalDigis","ZDC"),
   nZdcTs = cms.int32(6),
   calZDCDigi = cms.bool(False),
+  verbose = cms.bool(False),
 )
 
 # Define the output
